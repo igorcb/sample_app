@@ -3,7 +3,7 @@ require 'spec_helper'
 describe User do
 
   before(:each) do
-    @attr = { :name => "Example User", 
+    @attr = { :name => "Example User",
               :email => "user@example.com",
               :password => "foobar",
               :password_confirmation => "foobar" }
@@ -12,7 +12,7 @@ describe User do
   it "should create a new instance given valid attributes" do
     User.create!(@attr)
   end
-  
+
   it "should require a name" do
     no_name_user = User.new(@attr.merge(:name => ""))
     no_name_user.should_not be_valid
@@ -66,12 +66,12 @@ describe User do
       User.new(@attr.merge(:password => "", :password_confirmation => "")).
         should_not be_valid
     end
-  
+
     it "should require a matching password confirmation" do
       User.new(@attr.merge(:password_confirmation => "invalid")).
         should_not be_valid
     end
-  
+
     it "should reject short passwords" do
       short = "a" * 5
       hash = @attr.merge(:password => short, :password_confirmation => short)
@@ -93,7 +93,7 @@ describe User do
     it "should have an encrypted password attribute" do
       @user.should respond_to(:encrypted_password)
     end
-    
+
     it "should set the encrypted password" do
       @user.encrypted_password.should_not be_blank
     end
@@ -102,11 +102,11 @@ describe User do
 
       it "should be true if the passwords match" do
         @user.has_password?(@attr[:password]).should be_true
-      end    
+      end
 
       it "should be false if the passwords don't match" do
         @user.has_password?("invalid").should be_false
-      end 
+      end
     end
 
     describe "authenticate method" do
@@ -127,6 +127,49 @@ describe User do
       end
     end
   end
+
+  describe "micropost associations" do
+
+    before(:each) do
+      @user = User.create(@attr)
+      @mp1 = Factory(:micropost, :user => @user, :created_at => 1.day.ago)
+      @mp2 = Factory(:micropost, :user => @user, :created_at => 1.hour.ago)
+    end
+
+    it "should have a microposts attribute" do
+      @user.should respond_to(:microposts)
+    end
+
+    it "should have the right microposts in the right order" do
+      @user.microposts.should == [@mp2, @mp1]
+    end
+
+    it "should destroy associated microposts" do
+      @user.destroy
+      [@mp1, @mp2].each do |micropost|
+        Micropost.find_by_id(micropost.id).should be_nil
+      end
+    end
+
+    describe "status feed" do
+
+      it "should have a feed" do
+        @user.should respond_to(:feed)
+      end
+
+      it "should include the user's microposts" do
+        @user.feed.include?(@mp1).should be_true
+        @user.feed.include?(@mp2).should be_true
+      end
+
+      it "should not include a different user's microposts" do
+        mp3 = Factory(:micropost,
+                      :user => Factory(:user, :email => Factory.next(:email)))
+        @user.feed.include?(mp3).should be_false
+      end
+    end
+  end
+
 
 end
 

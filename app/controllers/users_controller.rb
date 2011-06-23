@@ -11,6 +11,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(:page => params[:page])
     @title = @user.name
   end
 
@@ -48,7 +49,8 @@ class UsersController < ApplicationController
   end
 
   def destroy
-    User.find(params[:id]).destroy
+    @user = User.find(params[:id])
+    @user.destroy
     flash[:success] = "User destroyed."
     redirect_to users_path
   end
@@ -56,8 +58,7 @@ class UsersController < ApplicationController
 private
 
   def admin_user
-    @user = current_user
-    puts '>>>>>>>>>>>>>>>>>>>>>>>>>' + @user.admin.to_s
+    @user = User.find(current_user)
     redirect_to(root_path) unless @user.admin?
   end
 
